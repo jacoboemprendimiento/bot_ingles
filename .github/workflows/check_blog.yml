@@ -1,0 +1,43 @@
+name: Revisar blog de inglés
+
+on:
+  # Cada 5 minutos, cubriendo las 16:00-18:00 hora de Portugal tanto en
+  # horario de invierno (WET, UTC+0) como de verano (WEST, UTC+1), con un
+  # pequeño margen a cada lado. En UTC eso es la franja 15:00-18:00.
+  schedule:
+    - cron: "*/5 15-17 * * *"
+    - cron: "0,5 18 * * *"
+  # Permite lanzarlo a mano desde la pestaña "Actions" para probar
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Ejecutar comprobación
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python check_blog.py
+
+      - name: Guardar el nuevo estado en el repositorio
+        run: |
+          git config user.name "blog-watcher-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add state.json
+          git diff --quiet --cached || git commit -m "Actualiza estado del blog"
+          git push
