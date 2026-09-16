@@ -31,11 +31,17 @@ TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
 
 def normalize(text: str) -> str:
-    """minúsculas, sin tildes, sin 'º'/'°', espacios simplificados."""
+    """minúsculas, sin tildes, sin 'º'/'°', sin puntuación, espacios simplificados.
+
+    Quitar la puntuación es importante: la profesora a veces escribe
+    "1º. Bach" o "1º: Bach", y sin este paso el punto o los dos puntos
+    se quedaban entre el "1" y "bach", impidiendo la detección.
+    """
     text = text.replace("º", "").replace("°", "")
     text = unicodedata.normalize("NFKD", text)
     text = "".join(c for c in text if not unicodedata.combining(c))
     text = text.lower()
+    text = re.sub(r"[^a-z0-9\s]", " ", text)
     text = re.sub(r"\s+", " ", text)
     return text
 
